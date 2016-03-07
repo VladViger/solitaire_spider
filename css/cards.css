@@ -9,6 +9,19 @@
     background-position: 80px 120px; /* clear */
 }
 
+body::after {/* preload img */
+    content: '';
+    position: absolute;
+    z-index: -1;
+    top: -1px;
+    left: -1px;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+    background-image: url(../images/cards_80_pn.png);
+    background-repeat: no-repeat;
+}
+
 /*
 -- clubs --
 */
@@ -236,6 +249,10 @@
     .card.open {
         background-image: url(../images/cards_98_pn.png);
         background-position: 98px 147px; /* clear */
+    }
+
+        body::after {
+        background-image: url(../images/cards_98_pn.png);
     }
 
     /*
@@ -466,6 +483,10 @@
     .card.open {
         background-image: url(../images/cards_110_pn.png);
         background-position: 110px 165px; /* clear */
+    }
+
+    body::after {
+        background-image: url(../images/cards_110_pn.png);
     }
 
     /*

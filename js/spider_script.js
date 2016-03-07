@@ -238,7 +238,7 @@ dealer.hint = function(allCards, allPlaces, selectors) {
 dealer.showCongratulation = function() {
     setTimeout(function() {
         document.body.classList.add('win');
-    }, 1000);
+    }, 1300);
 };
 
 dealer.hideCongratulation = function() {
@@ -286,7 +286,7 @@ Node.prototype.animationAppendChild = function(child) {
     ghost.classList.add('ghost');
     ghost.style.top = startCoords.top + 'px';
     ghost.style.left = startCoords.left + 'px';
-    document.body.appendChild(ghost);
+    document.body.insertBefore(ghost, document.body.children[0]);
 
     var queue = document.querySelectorAll('.ghost').length - 1;
     ghost.style.transitionDelay = queue*80 + 'ms';
