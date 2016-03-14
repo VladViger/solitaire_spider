@@ -347,7 +347,7 @@ body {
     width: 50%;
     left: -50%;
     background-color: transparent;
-    transition-delay: 0;
+    transition-delay: 0s;
 }
 
 .faq.open + .faq-shadow {

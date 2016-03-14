@@ -1,6 +1,4 @@
 var CARD_SQUARE = 1500;
-var cardDeckEl = document.getElementById('source');
-var dropout = document.getElementById('dropout');
 
 function CardDeck(diff) {
     var SUIT = ['s','h','c','d']; // [spades, hearts, clubs, diamonds]
@@ -78,6 +76,25 @@ function showMessage(text, left, top) {
     el.style.top = top + 'px';
     document.body.appendChild(el);
     setTimeout(function() { document.body.removeChild(el) }, 2500);
+}
+
+function getLimitHeight() {
+    var lowerEl = document.querySelector('.offside');
+    var innerEl = lowerEl.querySelector('.card');
+    var innerHeight = 0;
+    if (innerEl) innerHeight = getComputedStyle(innerEl).height.slice(0, -2);
+    return lowerEl.getBoundingClientRect().bottom - innerHeight;
+}
+
+function setSuitedHeight(el, maxHeight) {
+    el.dataset.height = '';
+    { el.classList.add('ie-fix'); el.classList.remove('ie-fix'); } // ie hack
+    var c = 1;
+    while (el.getBoundingClientRect().bottom > maxHeight) {
+        el.dataset.height = c;
+        { el.classList.add('ie-fix'); el.classList.remove('ie-fix'); } // ie hack
+        if (++c > 5) break;
+    }
 }
 
 var dealer = {};
@@ -245,24 +262,6 @@ dealer.hideCongratulation = function() {
     document.body.classList.remove('win');
 };
 
-function getLimitHeight() {
-    var lowerEl = document.querySelector('.offside');
-    var innerEl = lowerEl.querySelector('.card');
-    var innerHeight = 0;
-    if (innerEl) innerHeight = getComputedStyle(innerEl).height.slice(0, -2);
-    return lowerEl.getBoundingClientRect().bottom - innerHeight;
-}
-
-function setSuitedHeight(el, maxHeight) {
-    el.dataset.height = '';
-    { el.classList.add('ie-fix'); el.classList.remove('ie-fix'); } // ie hack
-    var c = 1;
-    while (el.getBoundingClientRect().bottom > maxHeight) {
-        el.dataset.height = c;
-        { el.classList.add('ie-fix'); el.classList.remove('ie-fix'); } // ie hack
-        if (++c > 5) break;
-    }
-}
 
 Node.prototype.animationAppendChild = function(child) {
     if (!TransitionEvent) return;
@@ -310,11 +309,25 @@ Node.prototype.animationAppendChild = function(child) {
     return child;
 };
 
-var dragObj = {};
-dragObj.el = document.getElementById('drag-el');
+Object.defineProperty(TouchEvent.prototype, 'pageX', {
+    get: function () {
+        return this.targetTouches[0].pageX;
+    }
+});
 
+Object.defineProperty(TouchEvent.prototype, 'pageY', {
+    get: function () {
+        return this.targetTouches[0].pageY;
+    }
+});
+
+var cardDeckEl = document.getElementById('source');
+var dropout = document.getElementById('dropout');
+var dragObj = {
+    el: document.getElementById('drag-el')
+};
 // variable after start game
-var limitHeight;
+var limitHeight, cardDeck;
 
 // Events ---------------------------------------
 window.onresize = function() {
@@ -323,9 +336,8 @@ window.onresize = function() {
     for (var i = 0; i < cols.length; i++) {
         setSuitedHeight(cols[i], limitHeight);
     }
-}
+};
 
-var cardDeck;  // = new CardDeck();
 document.forms.startGame.onsubmit = function() {
     var d = getValueFromRadioButton(this.diff);
     cardDeck = new CardDeck(d);
@@ -337,11 +349,11 @@ document.forms.startGame.onsubmit = function() {
     document.querySelector('.opaque').classList.remove('opaque');
     limitHeight = getLimitHeight();
     return false;
-}
+};
 
 document.forms.startGame.onmousedown = function(e) {
     e.stopPropagation();
-}
+};
 
 cardDeckEl.onclick = function(e) {
     if ( this.lastElementChild != e.target ) return;
@@ -361,12 +373,57 @@ cardDeckEl.onclick = function(e) {
     for (var i = 0; i < cols.length; i++) {
         setSuitedHeight(cols[i], limitHeight);
     }
-}
+};
 
-document.onmousedown = function(e) {
+document.querySelector('.btn-hint').onclick = function(e) {
+    var allCards = document.querySelectorAll('.column .card.open');
+    var allPlaces = document.querySelectorAll('.column .card.open:last-child');
+
+    if (allCards.length == 0) {
+        return;
+        
+    } else if (allPlaces.length < 10) {
+        var text = 'Можете походить на пустые клетки :)';
+        showMessage(text, e.pageX-80, e.pageY-80);
+        return;
+    }
+
+    dealer.hint(allCards, allPlaces, cardDeck.SELECTORS);
+};
+
+document.querySelector('.btn-new').onclick = function(e) {
+    if (!cardDeck) return;
+    if (dropout.children.length == 104) dealer.hideCongratulation();
+
+    dropout.innerHTML = '';
+    var cols = document.querySelectorAll('.column');
+    for (var i = 0; i < cols.length; i++) {
+        cols[i].innerHTML = '';
+    }
+
+    dealer.shuffle(cardDeck.cards);
+    dealer.reupload(cardDeck.cards);
+    dealer.delivery(44);
+    dealer.delivery(10, true);
+};
+
+document.querySelector('.btn-rev').onclick = function(e) {
+    if (!cardDeck) return;
+    var text = 'Назад уже ничего не вернуть...';
+    showMessage(text, e.pageX-100, e.pageY-100);
+};
+
+document.querySelector('.btn-faq').onclick = function() {
+    document.getElementById('faq').classList.add('open');
+};
+
+document.querySelector('.faq-close').onclick = function() {
+    document.getElementById('faq').classList.remove('open');
+};
+
+var startDrag = function(e) {
     var t = e.target;
-    if (e.which != 1 ||
-        !cardDeck ||
+    if (!cardDeck ||
         dragObj.el.children[0] ||
         !dealer.checkStartDrag(t, cardDeck.SELECTORS) ) return;
 
@@ -381,17 +438,18 @@ document.onmousedown = function(e) {
 
     dragObj.parentOld = t.parentNode;
     dragObj.el.insertBefore(t, dragObj.el.children[0]);
-}
+    e.preventDefault();
+};
 
-document.onmousemove = function(e) {
+var moveDrag = function(e) {
     if ( !dragObj.el.children[0] ) return;
 
     dragObj.el.style.left = e.pageX - dragObj.shiftX + 'px';
     dragObj.el.style.top = e.pageY - dragObj.shiftY + 'px';
-    return false;
-}
+    e.preventDefault();
+};
 
-document.onmouseup = function() {
+var endDrag = function() {
     if ( !dragObj.el.children[0] ) return;
 
     dragObj.parentNew = dealer.getDroppable(dragObj.el.children[0], dragObj.parentOld);
@@ -414,50 +472,20 @@ document.onmouseup = function() {
     }
 
     if (dropout.children.length == 104) dealer.showCongratulation();
-}
+};
 
-document.querySelector('.btn-hint').onclick = function(e) {
-    var allCards = document.querySelectorAll('.column .card.open');
-    var allPlaces = document.querySelectorAll('.column .card.open:last-child');
+document.addEventListener('touchstart', function(e) {
+    if (e.targetTouches[0].target != e.target) return;
+    startDrag(e);
+});
 
-    if (allCards.length == 0) {
-        return;
-        
-    } else if (allPlaces.length < 10) {
-        var text = 'Можете походить на пустые клетки :)';
-        showMessage(text, e.pageX-80, e.pageY-80);
-        return;
-    }
+document.addEventListener('mousedown', function(e) {
+    if (e.which != 1) return;
+    startDrag(e);
+});
 
-    dealer.hint(allCards, allPlaces, cardDeck.SELECTORS);
-}
+document.addEventListener('touchmove', moveDrag);
+document.addEventListener('mousemove', moveDrag);
 
-document.querySelector('.btn-new').onclick = function(e) {
-    if (!cardDeck) return;
-    if (dropout.children.length == 104) dealer.hideCongratulation();
-
-    dropout.innerHTML = '';
-    var cols = document.querySelectorAll('.column');
-    for (var i = 0; i < cols.length; i++) {
-        cols[i].innerHTML = '';
-    }
-
-    dealer.shuffle(cardDeck.cards);
-    dealer.reupload(cardDeck.cards);
-    dealer.delivery(44);
-    dealer.delivery(10, true);
-}
-
-document.querySelector('.btn-rev').onclick = function(e) {
-    if (!cardDeck) return;
-    var text = 'Назад уже ничего не вернуть...';
-    showMessage(text, e.pageX-100, e.pageY-100);
-}
-
-document.querySelector('.btn-faq').onclick = function() {
-    document.getElementById('faq').classList.add('open');
-}
-
-document.querySelector('.faq-close').onclick = function() {
-    document.getElementById('faq').classList.remove('open');
-}
+document.addEventListener('touchend', endDrag);
+document.addEventListener('mouseup', endDrag);

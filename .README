@@ -96,3 +96,7 @@ dragObj;
 
 // метод на основе встроенного appendChild, но с анимацией.
 Node.animationAppendChild(child);
+
+// добавляем touch-событиям pageX, pageY как в MouseEvent.
+TouchEvent.prototype.pageX;
+TouchEvent.prototype.pageY;
