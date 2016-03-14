@@ -309,6 +309,8 @@ Node.prototype.animationAppendChild = function(child) {
     return child;
 };
 
+// stupid hack, I'm sorry...
+var TouchEvent = TouchEvent || {prototype: {}};
 Object.defineProperty(TouchEvent.prototype, 'pageX', {
     get: function () {
         return this.targetTouches[0].pageX;

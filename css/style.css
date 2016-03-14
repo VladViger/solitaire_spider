@@ -18,7 +18,6 @@ input[type="submit"]::-moz-focus-inner {
     border: none;
 }
 
-
 /*
 -- Global style --
 */
@@ -185,6 +184,7 @@ body {
 }
 
 .drag-el {
+    z-index: 997;
     position: absolute;
 }
 
@@ -455,8 +455,8 @@ body {
 }
 
 .ghost {
-    position: fixed;
     z-index: 1001;
+    position: fixed;
     transition-property: top, left;
     transition-duration: 0.16s;
     transition-timing-function: linear;
